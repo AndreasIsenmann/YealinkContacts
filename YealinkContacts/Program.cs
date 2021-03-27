@@ -7,27 +7,43 @@ namespace YealinkContacts
     {
         public static void Main(string[] args)
         {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("YealinkContacts V{0}", typeof(MainClass).Assembly.GetName().Version);
+                Console.WriteLine("====================================");
+                Console.WriteLine("(c) 2021 Andreas Isenmann");
+                Console.WriteLine("Usage: YealinkContacts <vCardFilname> <OutputFilename>");
+                return;
+            }
+
+            try
+            {
+                ProcessInputFile(args[0], args[1]);
+            }
+            catch (FileNotFoundException e)
+            {
+                Console.WriteLine("File not found: {0}", e.Message);
+            }
+        }
+
+        private static void ProcessInputFile(string fnInput, string fnOutput)
+        {
             string line;
             YealinkContact yc = null;
-            StreamReader sr = new StreamReader("vCards.vcf");
-            StreamWriter sw = new StreamWriter("YealinkContacts.xml");
+            StreamReader sr = new StreamReader(fnInput);
+            StreamWriter sw = new StreamWriter(fnOutput);
 
-            sw.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
-            sw.WriteLine("<root_group>");
-            sw.WriteLine("<group display_name=\"All Contacts\" />");
-            sw.WriteLine("<group display_name=\"Blacklist\" />");
-            sw.WriteLine("</root_group>");
-
+            WriteBeginning(sw);
 
             sw.WriteLine("<root_contact>");
             while (null != (line = sr.ReadLine()))
             {
-                if(null==yc)
+                if (null == yc)
                 {
                     yc = new YealinkContact();
                 }
 
-                if(line.StartsWith("N:"))
+                if (line.StartsWith("N:"))
                 {
                     ExtractName(line.Substring(2), yc);
                 }
@@ -40,7 +56,7 @@ namespace YealinkContacts
                 if (line.StartsWith("END:VCARD"))
                 {
                     var xml = yc.GetXmlString();
-                    if(xml!=string.Empty)
+                    if (xml != string.Empty)
                     {
                         sw.WriteLine(xml);
                     }
@@ -50,6 +66,15 @@ namespace YealinkContacts
 
             }
             sw.WriteLine("<root_contact>");
+        }
+
+        private static void WriteBeginning(StreamWriter sw)
+        {
+            sw.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
+            sw.WriteLine("<root_group>");
+            sw.WriteLine("<group display_name=\"All Contacts\" />");
+            sw.WriteLine("<group display_name=\"Blacklist\" />");
+            sw.WriteLine("</root_group>");
         }
 
         private static void ExtractName(string line, YealinkContact yc)
