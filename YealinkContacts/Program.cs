@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Text;
+using System.Drawing;
 
 namespace YealinkContacts
 {
@@ -42,6 +44,12 @@ namespace YealinkContacts
                 {
                     yc = new YealinkContact();
                 }
+
+                if (line.StartsWith("PHOTO;"))
+                {
+                    line = ExtractImage(line.Substring(6), sr, yc);
+                }
+
 
                 if (line.StartsWith("N:"))
                 {
@@ -101,6 +109,52 @@ namespace YealinkContacts
             {
 
             }
+        }
+
+        private static void CreateImage(string imageBase64, string fileName)
+        {
+            byte[] imageData = Convert.FromBase64String(imageBase64);
+
+            var byteStream = new MemoryStream(imageData);
+
+            FileStream fs = new FileStream(fileName, FileMode.Create);
+            BinaryWriter br = new BinaryWriter(fs);
+            br.Write(imageData);
+            br.Close();
+            fs.Close();
+        }
+
+        static int imageNumber = 0;
+        private static string ExtractImage(string first, StreamReader sr, YealinkContact yc)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(first.Substring(first.LastIndexOf(":") + 1));
+
+            string line;
+            while (null != (line = sr.ReadLine()))
+            {
+                if(line.StartsWith(" "))
+                {
+                    sb.Append(line.Trim());
+                }
+                else
+                {
+                    string imageName;
+                    if(yc.FullName!=string.Empty)
+                    {
+                        imageName = yc.FullName.Replace(" ","_") + ".jpg";
+                    }
+                    else
+                    {
+                        imageName = string.Format("ContactImage{0}.jpg", imageNumber++);
+                    }
+                    CreateImage(sb.ToString(), imageName);
+                    break;
+                }
+
+            }
+
+            return line;
         }
     }
 }
